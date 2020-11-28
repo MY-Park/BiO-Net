@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from keras.preprocessing.image import ImageDataGenerator
-
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import tensorflow as tf
 # Runtime data augmentation
 def get_augmented(
     X_train, 
@@ -29,8 +29,21 @@ def get_augmented(
     Y_datagen.fit(Y_train, augment=True, seed=seed)
     X_train_augmented = X_datagen.flow(X_train, batch_size=batch_size, shuffle=True, seed=seed)
     Y_train_augmented = Y_datagen.flow(Y_train, batch_size=batch_size, shuffle=True, seed=seed)
-    
-    train_generator = zip(X_train_augmented, Y_train_augmented)
+
+    def make_into_dataset(it):
+        def get_i(i):
+            return it[i]
+        r_dataset = tf.data.Dataset.range(len(it))
+        dataset = r_dataset.map(lambda i: tf.numpy_function(get_i, [i], tf.float32))
+        shape = it[0].shape
+        dataset = dataset.map(lambda x: tf.ensure_shape(x, shape))
+        return dataset
+
+    X_train_dataset = make_into_dataset(X_train_augmented)
+    Y_train_dataset = make_into_dataset(Y_train_augmented)
+
+    #train_generator = zip(X_train_augmented, Y_train_augmented)
+    train_generator = tf.data.Dataset.zip((X_train_dataset, Y_train_dataset))
 
     if not (X_val is None) and not (Y_val is None):
         # Validation data, no data augmentation, but we create a generator anyway
@@ -42,7 +55,7 @@ def get_augmented(
         Y_val_augmented = Y_datagen_val.flow(Y_val, batch_size=batch_size, shuffle=True, seed=seed)
 
         # combine generators into one which yields image and masks
-        val_generator = zip(X_val_augmented, Y_val_augmented)
+        val_generator = zip(X_val_augmented.x, Y_val_augmented.x)
         
         return train_generator, val_generator
     else:

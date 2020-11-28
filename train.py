@@ -6,14 +6,18 @@ import sys
 from PIL import Image
 import argparse
 
-from keras.models import Model, load_model
-from keras.layers import multiply, add, Permute, Reshape, Dense, GlobalAveragePooling2D, BatchNormalization, Conv2D, Conv2DTranspose, MaxPooling2D, UpSampling2D, Input, concatenate, Add, Concatenate
-from keras import backend as K
-import tensorflow as tf
-import keras
-from keras.optimizers import Adam, SGD
-from tensorflow import ConfigProto
-from tensorflow import InteractiveSession
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import multiply, add, Permute, Reshape, Dense, GlobalAveragePooling2D, BatchNormalization, Conv2D, Conv2DTranspose, MaxPooling2D, UpSampling2D, Input, concatenate, Add, Concatenate
+from tensorflow.keras import backend as K
+import tensorflow as tfv2
+import tensorflow.keras
+from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+from tensorflow import keras
+
+#tfv2.compat.v1.disable_v2_behavior()
+tf = tfv2.compat.v1
 
 from core import *
 from utils import get_augmented
@@ -25,7 +29,7 @@ def train(args, train_data, val_data):
     K.clear_session()
     config = ConfigProto()
     config.gpu_options.allow_growth = True
-    session = tf.Session(config=config)
+    session = tf.compat.v1.Session(config=config)
     K.set_learning_phase(1)
 
     input_shape = x_train[0].shape
@@ -69,12 +73,14 @@ def train(args, train_data, val_data):
     callbacks = [keras.callbacks.ModelCheckpoint("checkpoints/"+args.exp+"/"+cpt_name,monitor='val_iou', mode='max',verbose=0, save_weights_only=args.save_weight, save_best_only=True)]
     if not os.path.isdir("checkpoints/"+args.exp):
       os.mkdir("checkpoints/"+args.exp)
-    history = model.fit_generator(
+    train_gen = train_gen.repeat(-1)
+    history = model.fit(
         train_gen,
         steps_per_epoch=args.steps,
         epochs=args.epochs,
         validation_data=(x_val, y_val),
-        callbacks=callbacks
+        validation_batch_size=1,
+        callbacks=callbacks,
     )
 
     K.clear_session()
@@ -87,7 +93,7 @@ def evaluate(args, valid_data):
   K.set_learning_phase(1)
   config = ConfigProto()
   config.gpu_options.allow_growth = True
-  session = tf.Session(config=config)
+  session = tf.compat.v1.Session(config=config)
 
   if args.model_path is None:
     integrate = '_int' if args.integrate else ''
@@ -126,7 +132,7 @@ def evaluate(args, valid_data):
 
 def main():
     parser = argparse.ArgumentParser(description='BiO-Net')
-    parser.add_argument('--epochs', default=300, type=int, help='trining epochs')
+    parser.add_argument('--epochs', default=300, type=int, help='training epochs')
     parser.add_argument('--batch_size', default=2, type=int, help='batch size')
     parser.add_argument('--steps', default=250, type=int, help='steps per epoch')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')

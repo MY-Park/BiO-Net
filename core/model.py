@@ -1,8 +1,8 @@
-from keras.models import Model, load_model
-from keras.layers import multiply, add, Permute, Reshape, Dense, GlobalAveragePooling2D, BatchNormalization, Conv2D, Conv2DTranspose, MaxPooling2D, UpSampling2D, Input, concatenate, Add, Concatenate
-from keras import backend as K
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import multiply, add, Permute, Reshape, Dense, GlobalAveragePooling2D, BatchNormalization, Conv2D, Conv2DTranspose, MaxPooling2D, UpSampling2D, Input, concatenate, Add, Concatenate
+from tensorflow.keras import backend as K
 import tensorflow as tf
-import keras
+import tensorflow.keras
 
 from utils import get_augmented
 
